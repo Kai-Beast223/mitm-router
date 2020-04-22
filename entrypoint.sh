@@ -41,7 +41,7 @@ if [ "$MAC" != "unchanged" ] ; then
   ifconfig "$AP_IFACE" up
 fi 
 
-ifconfig "$AP_IFACE" 10.0.0.1/24
+ifconfig "$AP_IFACE" 10.1.0.1/24
 
 # configure WPA password if provided
 if [ ! -z "$PASSWORD" ]; then
@@ -88,15 +88,19 @@ fi
 # where mitmproxy will be listening for it
 iptables -t nat -C PREROUTING -i "$AP_IFACE" -p tcp --dport 80 -j REDIRECT --to-port 1337
 if [ ! $? -eq 0 ] ; then
-  iptables -t nat -A PREROUTING -i "$AP_IFACE" -p tcp --dport 80 -j REDIRECT --to-port 1337
+	iptables -t nat -A PREROUTING -i "$AP_IFACE" -p tcp --dport 80 -j REDIRECT --to-port 1337
+fi
+iptables -t nat -C PREROUTING -i "$AP_IFACE" -p tcp --dport 443 -j REDIRECT --to-port 1337
+if [ ! $? -eq 0 ] ; then
+	iptables -t nat -A PREROUTING -i "$AP_IFACE" -p tcp --dport 443 -j REDIRECT --to-port 1337
 fi
 
 # setup handlers
 trap term_handler SIGTERM
 trap term_handler SIGKILL
 
-# start mitmproxy in the background, but keep its output in this session
-mitmdump -T --host -p 1337 -w "$CAPTURE_FILE" "$FILTER" & 
+# start mitmweb in the background, but keep its output in this session
+mitmweb --mode transparent -p 1337 & 
 MITMDUMP_PID=$!
 
 # wait forever
